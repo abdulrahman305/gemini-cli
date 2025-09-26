@@ -8,13 +8,10 @@ import type React from 'react';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { Box, Text } from 'ink';
 import { SuggestionsDisplay, MAX_WIDTH } from './SuggestionsDisplay.js';
-import { theme } from '../semantic-colors.js';
+import { InputContentDisplay } from './InputContentDisplay.js';
 import { useInputHistory } from '../hooks/useInputHistory.js';
 import type { TextBuffer } from './shared/text-buffer.js';
 import { logicalPosToOffset } from './shared/text-buffer.js';
-import { cpSlice, cpLen, toCodePoints } from '../utils/textUtils.js';
-import chalk from 'chalk';
-import stringWidth from 'string-width';
 import { useShellHistory } from '../hooks/useShellHistory.js';
 import { useReverseSearchCompletion } from '../hooks/useReverseSearchCompletion.js';
 import { useCommandCompletion } from '../hooks/useCommandCompletion.js';
@@ -24,10 +21,6 @@ import { keyMatchers, Command } from '../keyMatchers.js';
 import type { CommandContext, SlashCommand } from '../commands/types.js';
 import type { Config } from '@google/gemini-cli-core';
 import { ApprovalMode } from '@google/gemini-cli-core';
-import {
-  parseInputForHighlighting,
-  buildSegmentsForVisualSlice,
-} from '../utils/highlight.js';
 import {
   clipboardHasImage,
   saveClipboardImage,
@@ -698,123 +691,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
   useKeypress(handleInput, { isActive: !isEmbeddedShellFocused });
 
-  const linesToRender = buffer.viewportVisualLines;
-  const [cursorVisualRowAbsolute, cursorVisualColAbsolute] =
-    buffer.visualCursor;
-  const scrollVisualRow = buffer.visualScrollRow;
-
-  const getGhostTextLines = useCallback(() => {
-    if (
-      !completion.promptCompletion.text ||
-      !buffer.text ||
-      !completion.promptCompletion.text.startsWith(buffer.text)
-    ) {
-      return { inlineGhost: '', additionalLines: [] };
-    }
-
-    const ghostSuffix = completion.promptCompletion.text.slice(
-      buffer.text.length,
-    );
-    if (!ghostSuffix) {
-      return { inlineGhost: '', additionalLines: [] };
-    }
-
-    const currentLogicalLine = buffer.lines[buffer.cursor[0]] || '';
-    const cursorCol = buffer.cursor[1];
-
-    const textBeforeCursor = cpSlice(currentLogicalLine, 0, cursorCol);
-    const usedWidth = stringWidth(textBeforeCursor);
-    const remainingWidth = Math.max(0, inputWidth - usedWidth);
-
-    const ghostTextLinesRaw = ghostSuffix.split('\n');
-    const firstLineRaw = ghostTextLinesRaw.shift() || '';
-
-    let inlineGhost = '';
-    let remainingFirstLine = '';
-
-    if (stringWidth(firstLineRaw) <= remainingWidth) {
-      inlineGhost = firstLineRaw;
-    } else {
-      const words = firstLineRaw.split(' ');
-      let currentLine = '';
-      let wordIdx = 0;
-      for (const word of words) {
-        const prospectiveLine = currentLine ? `${currentLine} ${word}` : word;
-        if (stringWidth(prospectiveLine) > remainingWidth) {
-          break;
-        }
-        currentLine = prospectiveLine;
-        wordIdx++;
-      }
-      inlineGhost = currentLine;
-      if (words.length > wordIdx) {
-        remainingFirstLine = words.slice(wordIdx).join(' ');
-      }
-    }
-
-    const linesToWrap = [];
-    if (remainingFirstLine) {
-      linesToWrap.push(remainingFirstLine);
-    }
-    linesToWrap.push(...ghostTextLinesRaw);
-    const remainingGhostText = linesToWrap.join('\n');
-
-    const additionalLines: string[] = [];
-    if (remainingGhostText) {
-      const textLines = remainingGhostText.split('\n');
-      for (const textLine of textLines) {
-        const words = textLine.split(' ');
-        let currentLine = '';
-
-        for (const word of words) {
-          const prospectiveLine = currentLine ? `${currentLine} ${word}` : word;
-          const prospectiveWidth = stringWidth(prospectiveLine);
-
-          if (prospectiveWidth > inputWidth) {
-            if (currentLine) {
-              additionalLines.push(currentLine);
-            }
-
-            let wordToProcess = word;
-            while (stringWidth(wordToProcess) > inputWidth) {
-              let part = '';
-              const wordCP = toCodePoints(wordToProcess);
-              let partWidth = 0;
-              let splitIndex = 0;
-              for (let i = 0; i < wordCP.length; i++) {
-                const char = wordCP[i];
-                const charWidth = stringWidth(char);
-                if (partWidth + charWidth > inputWidth) {
-                  break;
-                }
-                part += char;
-                partWidth += charWidth;
-                splitIndex = i + 1;
-              }
-              additionalLines.push(part);
-              wordToProcess = cpSlice(wordToProcess, splitIndex);
-            }
-            currentLine = wordToProcess;
-          } else {
-            currentLine = prospectiveLine;
-          }
-        }
-        if (currentLine) {
-          additionalLines.push(currentLine);
-        }
-      }
-    }
-
-    return { inlineGhost, additionalLines };
-  }, [
-    completion.promptCompletion.text,
-    buffer.text,
-    buffer.lines,
-    buffer.cursor,
-    inputWidth,
-  ]);
-
-  const { inlineGhost, additionalLines } = getGhostTextLines();
   const getActiveCompletion = () => {
     if (commandSearchActive) return commandSearchCompletion;
     if (reverseSearchActive) return reverseSearchCompletion;
@@ -876,147 +752,19 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
             '>'
           )}{' '}
         </Text>
-        <Box flexGrow={1} flexDirection="column">
-          {buffer.text.length === 0 && placeholder ? (
-            showCursor ? (
-              <Text>
-                {chalk.inverse(placeholder.slice(0, 1))}
-                <Text color={theme.text.secondary}>{placeholder.slice(1)}</Text>
-              </Text>
-            ) : (
-              <Text color={theme.text.secondary}>{placeholder}</Text>
-            )
-          ) : (
-            linesToRender
-              .map((lineText, visualIdxInRenderedSet) => {
-                const absoluteVisualIdx =
-                  scrollVisualRow + visualIdxInRenderedSet;
-                const mapEntry = buffer.visualToLogicalMap[absoluteVisualIdx];
-                const cursorVisualRow =
-                  cursorVisualRowAbsolute - scrollVisualRow;
-                const isOnCursorLine =
-                  focus && visualIdxInRenderedSet === cursorVisualRow;
-
-                const renderedLine: React.ReactNode[] = [];
-
-                const [logicalLineIdx, logicalStartCol] = mapEntry;
-                const logicalLine = buffer.lines[logicalLineIdx] || '';
-                const tokens = parseInputForHighlighting(
-                  logicalLine,
-                  logicalLineIdx,
-                );
-
-                const visualStart = logicalStartCol;
-                const visualEnd = logicalStartCol + cpLen(lineText);
-                const segments = buildSegmentsForVisualSlice(
-                  tokens,
-                  visualStart,
-                  visualEnd,
-                );
-
-                let charCount = 0;
-                segments.forEach((seg, segIdx) => {
-                  const segLen = cpLen(seg.text);
-                  let display = seg.text;
-
-                  if (isOnCursorLine) {
-                    const relativeVisualColForHighlight =
-                      cursorVisualColAbsolute;
-                    const segStart = charCount;
-                    const segEnd = segStart + segLen;
-                    if (
-                      relativeVisualColForHighlight >= segStart &&
-                      relativeVisualColForHighlight < segEnd
-                    ) {
-                      const charToHighlight = cpSlice(
-                        seg.text,
-                        relativeVisualColForHighlight - segStart,
-                        relativeVisualColForHighlight - segStart + 1,
-                      );
-                      const highlighted = showCursor
-                        ? chalk.inverse(charToHighlight)
-                        : charToHighlight;
-                      display =
-                        cpSlice(
-                          seg.text,
-                          0,
-                          relativeVisualColForHighlight - segStart,
-                        ) +
-                        highlighted +
-                        cpSlice(
-                          seg.text,
-                          relativeVisualColForHighlight - segStart + 1,
-                        );
-                    }
-                    charCount = segEnd;
-                  }
-
-                  const color =
-                    seg.type === 'command' || seg.type === 'file'
-                      ? theme.text.accent
-                      : theme.text.primary;
-
-                  renderedLine.push(
-                    <Text key={`token-${segIdx}`} color={color}>
-                      {display}
-                    </Text>,
-                  );
-                });
-
-                const currentLineGhost = isOnCursorLine ? inlineGhost : '';
-                if (
-                  isOnCursorLine &&
-                  cursorVisualColAbsolute === cpLen(lineText)
-                ) {
-                  if (!currentLineGhost) {
-                    renderedLine.push(
-                      <Text key={`cursor-end-${cursorVisualColAbsolute}`}>
-                        {showCursor ? chalk.inverse(' ') : ' '}
-                      </Text>,
-                    );
-                  }
-                }
-
-                const showCursorBeforeGhost =
-                  focus &&
-                  isOnCursorLine &&
-                  cursorVisualColAbsolute === cpLen(lineText) &&
-                  currentLineGhost;
-
-                return (
-                  <Box key={`line-${visualIdxInRenderedSet}`} height={1}>
-                    <Text>
-                      {renderedLine}
-                      {showCursorBeforeGhost &&
-                        (showCursor ? chalk.inverse(' ') : ' ')}
-                      {currentLineGhost && (
-                        <Text color={theme.text.secondary}>
-                          {currentLineGhost}
-                        </Text>
-                      )}
-                    </Text>
-                  </Box>
-                );
-              })
-              .concat(
-                additionalLines.map((ghostLine, index) => {
-                  const padding = Math.max(
-                    0,
-                    inputWidth - stringWidth(ghostLine),
-                  );
-                  return (
-                    <Text
-                      key={`ghost-line-${index}`}
-                      color={theme.text.secondary}
-                    >
-                      {ghostLine}
-                      {' '.repeat(padding)}
-                    </Text>
-                  );
-                }),
-              )
-          )}
-        </Box>
+        <InputContentDisplay
+          buffer={buffer}
+          placeholder={placeholder}
+          focus={focus}
+          inputWidth={inputWidth}
+          linesToRender={linesToRender}
+          scrollVisualRow={scrollVisualRow}
+          cursorVisualRowAbsolute={cursorVisualRowAbsolute}
+          cursorVisualColAbsolute={cursorVisualColAbsolute}
+          inlineGhost={inlineGhost}
+          additionalLines={additionalLines}
+          showCursor={showCursor}
+        />
       </Box>
       {shouldShowSuggestions && (
         <Box paddingRight={2}>
