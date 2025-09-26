@@ -151,6 +151,10 @@ jobs:
   test_slow_platforms:
     name: 'Slow Test - Mac'
     runs-on: '${{ matrix.os }}'
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'push'
     needs:
       - 'lint'
     permissions:

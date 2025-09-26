@@ -28,3 +28,15 @@ export function getLatestTag(pattern) {
     return '';
   }
 }
+
+export function getVersionFromNPM(distTag) {
+  const command = `npm view @google/gemini-cli version --tag=${distTag}`;
+  try {
+    return execSync(command).toString().trim();
+  } catch (error) {
+    console.error(
+      `Failed to get NPM version for dist-tag "${distTag}": ${error.message}`,
+    );
+    return '';
+  }
+}

@@ -9,7 +9,7 @@
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import semver from 'semver';
-import { getLatestTag } from './utils/release-utils.js';
+import { getLatestTag, getVersionFromNPM } from './utils/release-utils.js';
 
 function getArgs() {
   const args = {};
@@ -20,17 +20,6 @@ function getArgs() {
     }
   });
   return args;
-}
-function getVersionFromNPM(distTag) {
-  const command = `npm view @google/gemini-cli version --tag=${distTag}`;
-  try {
-    return execSync(command).toString().trim();
-  } catch (error) {
-    console.error(
-      `Failed to get NPM version for dist-tag "${distTag}": ${error.message}`,
-    );
-    return '';
-  }
 }
 
 function getAllVersionsFromNPM() {
