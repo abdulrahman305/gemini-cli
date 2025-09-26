@@ -17,36 +17,39 @@ interface InstallArgs {
   autoUpdate?: boolean;
 }
 
-export async function handleInstall(args: InstallArgs) {
-  try {
-    let installMetadata: ExtensionInstallMetadata;
-    if (args.source) {
-      const { source } = args;
-      if (
-        source.startsWith('http://') ||
-        source.startsWith('https://') ||
-        source.startsWith('git@') ||
-        source.startsWith('sso://')
-      ) {
-        installMetadata = {
-          source,
-          type: 'git',
-          ref: args.ref,
-          autoUpdate: args.autoUpdate,
-        };
-      } else {
-        throw new Error(`The source "${source}" is not a valid URL format.`);
-      }
-    } else if (args.path) {
-      installMetadata = {
-        source: args.path,
-        type: 'local',
+function getInstallMetadata(args: InstallArgs): ExtensionInstallMetadata {
+  if (args.source) {
+    const { source } = args;
+    if (
+      source.startsWith('http://') ||
+      source.startsWith('https://') ||
+      source.startsWith('git@') ||
+      source.startsWith('sso://')
+    ) {
+      return {
+        source,
+        type: 'git',
+        ref: args.ref,
         autoUpdate: args.autoUpdate,
       };
     } else {
-      // This should not be reached due to the yargs check.
-      throw new Error('Either --source or --path must be provided.');
+      throw new Error(`The source "${source}" is not a valid URL format.`);
     }
+  } else if (args.path) {
+    return {
+      source: args.path,
+      type: 'local',
+      autoUpdate: args.autoUpdate,
+    };
+  } else {
+    // This should not be reached due to the yargs check.
+    throw new Error('Either --source or --path must be provided.');
+  }
+}
+
+export async function handleInstall(args: InstallArgs) {
+  try {
+    const installMetadata = getInstallMetadata(args);
 
     const name = await installExtension(installMetadata, true);
     console.log(`Extension "${name}" installed successfully and enabled.`);

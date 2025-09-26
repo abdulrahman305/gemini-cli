@@ -5,10 +5,20 @@ on:
     branches:
       - 'main'
       - 'release/**'
+    paths:
+      - 'packages/**'
+      - 'package.json'
+      - 'eslint.config.js'
+      - '.eslintrc'
   pull_request:
     branches:
       - 'main'
       - 'release/**'
+    paths:
+      - 'packages/**'
+      - 'package.json'
+      - 'eslint.config.js'
+      - '.eslintrc'
   merge_group:
   workflow_dispatch:
     inputs:
