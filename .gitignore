@@ -54,4 +54,7 @@ gha-creds-*.json
 # Log files
 patch_output.log
 
+# Temporary/Downloaded files
+download-ripgrep*/
+
 .gemini/
