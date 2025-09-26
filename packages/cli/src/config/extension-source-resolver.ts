@@ -7,6 +7,11 @@ interface InstallArgs {
   autoUpdate?: boolean;
 }
 
+// New interface for source resolvers
+interface ExtensionSourceResolver {
+  resolve(args: InstallArgs): ExtensionInstallMetadata;
+}
+
 function getGitInstallMetadata(args: InstallArgs): ExtensionInstallMetadata {
   const { source } = args;
   if (!source) {

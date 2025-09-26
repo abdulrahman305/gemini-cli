@@ -9,6 +9,7 @@
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import semver from 'semver';
+import { getLatestTag } from './utils/release-utils.js';
 
 function getArgs() {
   const args = {};
@@ -20,35 +21,6 @@ function getArgs() {
   });
   return args;
 }
-
-function getLatestTag(pattern) {
-  const command = `git tag -l '${pattern}'`;
-  try {
-    const tags = execSync(command)
-      .toString()
-      .trim()
-      .split('\n')
-      .filter(Boolean);
-    if (tags.length === 0) return '';
-
-    // Convert tags to versions (remove 'v' prefix) and sort by semver
-    const versions = tags
-      .map((tag) => tag.replace(/^v/, ''))
-      .filter((version) => semver.valid(version))
-      .sort((a, b) => semver.rcompare(a, b)); // rcompare for descending order
-
-    if (versions.length === 0) return '';
-
-    // Return the latest version with 'v' prefix restored
-    return `v${versions[0]}`;
-  } catch (error) {
-    console.error(
-      `Failed to get latest git tag for pattern "${pattern}": ${error.message}`,
-    );
-    return '';
-  }
-}
-
 function getVersionFromNPM(distTag) {
   const command = `npm view @google/gemini-cli version --tag=${distTag}`;
   try {
