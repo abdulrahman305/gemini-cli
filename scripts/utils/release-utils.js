@@ -34,9 +34,17 @@ export function getVersionFromNPM(distTag) {
   try {
     return execSync(command).toString().trim();
   } catch (error) {
-    console.error(
-      `Failed to get NPM version for dist-tag "${distTag}": ${error.message}`,
-    );
     return '';
+  }
+}
+
+export function getAllVersionsFromNPM() {
+  const command = `npm view @google/gemini-cli versions --json`;
+  try {
+    const versionsJson = execSync(command).toString().trim();
+    return JSON.parse(versionsJson);
+  } catch (error) {
+    console.error(`Failed to get all NPM versions: ${error.message}`);
+    return [];
   }
 }

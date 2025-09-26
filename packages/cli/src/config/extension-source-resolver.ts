@@ -50,13 +50,19 @@ const LocalExtensionSourceResolver: ExtensionSourceResolver = {
   },
 };
 
+const ExtensionSourceResolverFactory = {
+  getResolver(args: InstallArgs): ExtensionSourceResolver {
+    if (args.source) {
+      return GitExtensionSourceResolver;
+    } else if (args.path) {
+      return LocalExtensionSourceResolver;
+    } else {
+      throw new Error('Either --source or --path must be provided.');
+    }
+  },
+};
+
 export function getInstallMetadata(args: InstallArgs): ExtensionInstallMetadata {
-  if (args.source) {
-    return GitExtensionSourceResolver.resolve(args);
-  } else if (args.path) {
-    return LocalExtensionSourceResolver.resolve(args);
-  } else {
-    // This should not be reached due to the yargs check.
-    throw new Error('Either --source or --path must be provided.');
-  }
+  const resolver = ExtensionSourceResolverFactory.getResolver(args);
+  return resolver.resolve(args);
 }

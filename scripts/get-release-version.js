@@ -9,7 +9,7 @@
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import semver from 'semver';
-import { getLatestTag, getVersionFromNPM } from './utils/release-utils.js';
+import { getLatestTag, getVersionFromNPM, getAllVersionsFromNPM } from './utils/release-utils.js';
 
 function getArgs() {
   const args = {};
@@ -22,16 +22,6 @@ function getArgs() {
   return args;
 }
 
-function getAllVersionsFromNPM() {
-  const command = `npm view @google/gemini-cli versions --json`;
-  try {
-    const versionsJson = execSync(command).toString().trim();
-    return JSON.parse(versionsJson);
-  } catch (error) {
-    console.error(`Failed to get all NPM versions: ${error.message}`);
-    return [];
-  }
-}
 
 function detectRollbackAndGetBaseline(npmDistTag) {
   // Get the current dist-tag version
