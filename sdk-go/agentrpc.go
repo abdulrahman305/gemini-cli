@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/inferablehq/inferable/sdk-go/internal/client"
-	"github.com/inferablehq/inferable/sdk-go/internal/util"
+	"github.com/google-gemini/gemini-cli/sdk-go/internal/client"
+	"github.com/google-gemini/gemini-cli/sdk-go/internal/util"
 )
 
 // Version of the AgentRPC package
