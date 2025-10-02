@@ -1,5 +1,5 @@
 // Package inferable provides a client for interacting with the Inferable API.
-package inferable
+package agentrpc
 
 import (
 	"encoding/json"
