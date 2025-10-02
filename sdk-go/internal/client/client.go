@@ -81,7 +81,7 @@ func (c *Client) FetchData(options FetchDataOptions) (string, http.Header, error
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", nil, fmt.Errorf("error reading response: %v", err), resp.StatusCode
 	}
