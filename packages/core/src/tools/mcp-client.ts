@@ -86,6 +86,10 @@ export class McpClient {
   private transport: Transport | undefined;
   private status: MCPServerStatus = MCPServerStatus.DISCONNECTED;
 
+  getClient(): Client {
+    return this.client;
+  }
+
   constructor(
     private readonly serverName: string,
     private readonly serverConfig: MCPServerConfig,
@@ -1287,6 +1291,28 @@ export async function createTransport(
     );
   }
 
+  if (mcpServerConfig.pythonJsonRpcUrl) {
+    const transportOptions: StreamableHTTPClientTransportOptions = {};
+
+    if (hasOAuthConfig && accessToken) {
+      transportOptions.requestInit = {
+        headers: {
+          ...mcpServerConfig.headers,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      };
+    } else if (mcpServerConfig.headers) {
+      transportOptions.requestInit = {
+        headers: mcpServerConfig.headers,
+      };
+    }
+
+    return new StreamableHTTPClientTransport(
+      new URL(mcpServerConfig.pythonJsonRpcUrl),
+      transportOptions,
+    );
+  }
+
   if (mcpServerConfig.url) {
     const transportOptions: SSEClientTransportOptions = {};
 
@@ -1322,7 +1348,7 @@ export async function createTransport(
       stderr: 'pipe',
     });
     if (debugMode) {
-      transport.stderr!.on('data', (data) => {
+      transport.stderr!.on('data', (data: Buffer) => {
         const stderrStr = data.toString().trim();
         console.debug(`[DEBUG] [MCP STDERR (${mcpServerName})]: `, stderrStr);
       });
@@ -1331,7 +1357,7 @@ export async function createTransport(
   }
 
   throw new Error(
-    `Invalid configuration: missing httpUrl (for Streamable HTTP), url (for SSE), and command (for stdio).`,
+    `Invalid configuration: missing httpUrl (for Streamable HTTP), url (for SSE), command (for stdio), and pythonJsonRpcUrl (for Python JSON-RPC).`,
   );
 }
 

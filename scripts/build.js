@@ -1,4 +1,8 @@
 /**
+ * Orchestrates the build process for the entire monorepo, including installing dependencies,
+ * generating code, building workspaces, and optionally building the sandbox container image.
+ */
+/**
  * @license
  * Copyright 2025 Google LLC
  * SPDX-License-Identifier: Apache-2.0

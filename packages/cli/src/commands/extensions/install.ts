@@ -12,44 +12,11 @@ import {
 import type { ExtensionInstallMetadata } from '@google/gemini-cli-core';
 
 import { getErrorMessage } from '../../utils/errors.js';
-
-interface InstallArgs {
-  source?: string;
-  path?: string;
-  ref?: string;
-  autoUpdate?: boolean;
-}
+import { getInstallMetadata, InstallArgs } from '../../config/extension-source-resolver.js';
 
 export async function handleInstall(args: InstallArgs) {
   try {
-    let installMetadata: ExtensionInstallMetadata;
-    if (args.source) {
-      const { source } = args;
-      if (
-        source.startsWith('http://') ||
-        source.startsWith('https://') ||
-        source.startsWith('git@') ||
-        source.startsWith('sso://')
-      ) {
-        installMetadata = {
-          source,
-          type: 'git',
-          ref: args.ref,
-          autoUpdate: args.autoUpdate,
-        };
-      } else {
-        throw new Error(`The source "${source}" is not a valid URL format.`);
-      }
-    } else if (args.path) {
-      installMetadata = {
-        source: args.path,
-        type: 'local',
-        autoUpdate: args.autoUpdate,
-      };
-    } else {
-      // This should not be reached due to the yargs check.
-      throw new Error('Either --source or --path must be provided.');
-    }
+    const installMetadata = getInstallMetadata(args);
 
     const name = await installExtension(
       installMetadata,

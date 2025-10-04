@@ -1,0 +1,7 @@
+fix(deps): Resolve sdk-node vulnerabilities and update dependencies
+
+This commit addresses the critical `form-data` vulnerability (CVE-2025-7783) and other moderate/low vulnerabilities in the `sdk-node` package.
+
+- **Vulnerability Fix:** The `form-data` vulnerability was resolved by adding an `overrides` section to `sdk-node/package.json`, forcing `form-data` to version `4.0.4`.
+- **Dependency Updates:** `zod` was updated to `3.23.8` to resolve a peer dependency conflict with `openai`. `npm audit fix` was then run to resolve other moderate/low vulnerabilities in `@babel/helpers`, `@babel/runtime`, and `brace-expansion`.
+- **Lockfile Update:** `sdk-node/package-lock.json` has been updated to reflect these changes.
