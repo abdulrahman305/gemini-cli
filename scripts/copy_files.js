@@ -22,37 +22,20 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { copyFilesRecursive } from './utils/file-copy.js';
 
 const sourceDir = path.join('src');
 const targetDir = path.join('dist', 'src');
 
 const extensionsToCopy = ['.md', '.json', '.sb'];
 
-function copyFilesRecursive(source, target) {
-  if (!fs.existsSync(target)) {
-    fs.mkdirSync(target, { recursive: true });
-  }
-
-  const items = fs.readdirSync(source, { withFileTypes: true });
-
-  for (const item of items) {
-    const sourcePath = path.join(source, item.name);
-    const targetPath = path.join(target, item.name);
-
-    if (item.isDirectory()) {
-      copyFilesRecursive(sourcePath, targetPath);
-    } else if (extensionsToCopy.includes(path.extname(item.name))) {
-      fs.copyFileSync(sourcePath, targetPath);
-    }
-  }
-}
 
 if (!fs.existsSync(sourceDir)) {
   console.error(`Source directory ${sourceDir} not found.`);
   process.exit(1);
 }
 
-copyFilesRecursive(sourceDir, targetDir);
+copyFilesRecursive(sourceDir, targetDir, extensionsToCopy);
 
 // Copy example extensions into the bundle.
 const packageName = path.basename(process.cwd());

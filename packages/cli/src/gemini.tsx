@@ -167,6 +167,23 @@ export async function startInteractiveUI(
   // Create wrapper component to use hooks inside render
   const AppWrapper = () => {
     const kittyProtocolStatus = useKittyKeyboardProtocol();
+
+    const googleWebSearch = useGoogleWebSearch();
+
+    // Example useEffect with cleanup
+    useEffect(() => {
+      console.log('Gemini component mounted or dependencies changed');
+      const timer = setTimeout(() => {
+        console.log('Timer fired after 1 second');
+      }, 1000);
+
+      return () => {
+        clearTimeout(timer);
+        console.log('Gemini component unmounted or dependencies changed (cleanup)');
+      };
+    }, []); // Empty dependency array means it runs once on mount and cleans up on unmount
+
+    useInput((input, key) => {
     return (
       <SettingsContext.Provider value={settings}>
         <KeypressProvider

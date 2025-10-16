@@ -6,17 +6,12 @@
 
 import { Box, Text, useIsScreenReaderEnabled } from 'ink';
 import { LoadingIndicator } from './LoadingIndicator.js';
-import { ContextSummaryDisplay } from './ContextSummaryDisplay.js';
-import { AutoAcceptIndicator } from './AutoAcceptIndicator.js';
-import { ShellModeIndicator } from './ShellModeIndicator.js';
 import { DetailedMessagesDisplay } from './DetailedMessagesDisplay.js';
 import { InputPrompt } from './InputPrompt.js';
 import { Footer } from './Footer.js';
 import { ShowMoreLines } from './ShowMoreLines.js';
 import { QueuedMessageDisplay } from './QueuedMessageDisplay.js';
 import { OverflowProvider } from '../contexts/OverflowContext.js';
-import { theme } from '../semantic-colors.js';
-import { isNarrowWidth } from '../utils/isNarrowWidth.js';
 import { useUIState } from '../contexts/UIStateContext.js';
 import { useUIActions } from '../contexts/UIActionsContext.js';
 import { useVimMode } from '../contexts/VimModeContext.js';
@@ -112,6 +107,7 @@ export const Composer = () => {
           {uiState.shellModeActive && <ShellModeIndicator />}
         </Box>
       </Box>
+      <ComposerStatusDisplay />
 
       {uiState.showErrorDetails && (
         <OverflowProvider>

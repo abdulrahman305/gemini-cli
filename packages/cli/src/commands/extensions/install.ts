@@ -53,6 +53,11 @@ export async function handleInstall(args: InstallArgs) {
         throw new Error('Install source not found.');
       }
     }
+import { getInstallMetadata, InstallArgs } from '../../config/extension-source-resolver.js';
+
+export async function handleInstall(args: InstallArgs) {
+  try {
+    const installMetadata = getInstallMetadata(args);
 
     const name = await installOrUpdateExtension(
       installMetadata,
