@@ -5,10 +5,9 @@
  */
 
 import { Box, Text, useIsScreenReaderEnabled } from 'ink';
-import { useMemo } from 'react';
 import { LoadingIndicator } from './LoadingIndicator.js';
 import { DetailedMessagesDisplay } from './DetailedMessagesDisplay.js';
-import { InputPrompt, calculatePromptWidths } from './InputPrompt.js';
+import { InputPrompt } from './InputPrompt.js';
 import { Footer } from './Footer.js';
 import { ShowMoreLines } from './ShowMoreLines.js';
 import { QueuedMessageDisplay } from './QueuedMessageDisplay.js';
@@ -35,14 +34,8 @@ export const Composer = () => {
 
   const { contextFileNames, showAutoAcceptIndicator } = uiState;
 
-  // Use the container width of InputPrompt for width of DetailedMessagesDisplay
-  const { containerWidth } = useMemo(
-    () => calculatePromptWidths(uiState.terminalWidth),
-    [uiState.terminalWidth],
-  );
-
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" width={uiState.mainAreaWidth} flexShrink={0}>
       {!uiState.embeddedShellFocused && (
         <LoadingIndicator
           thought={
@@ -60,10 +53,60 @@ export const Composer = () => {
         />
       )}
 
-      {!uiState.isConfigInitialized && <ConfigInitDisplay />}
+      {(!uiState.slashCommands || !uiState.isConfigInitialized) && (
+        <ConfigInitDisplay />
+      )}
 
       <QueuedMessageDisplay messageQueue={uiState.messageQueue} />
 
+      <Box
+        marginTop={1}
+        justifyContent={
+          settings.merged.ui?.hideContextSummary
+            ? 'flex-start'
+            : 'space-between'
+        }
+        width="100%"
+        flexDirection={isNarrow ? 'column' : 'row'}
+        alignItems={isNarrow ? 'flex-start' : 'center'}
+      >
+        <Box marginRight={1}>
+          {process.env['GEMINI_SYSTEM_MD'] && (
+            <Text color={theme.status.error}>|⌐■_■| </Text>
+          )}
+          {uiState.ctrlCPressedOnce ? (
+            <Text color={theme.status.warning}>
+              Press Ctrl+C again to exit.
+            </Text>
+          ) : uiState.ctrlDPressedOnce ? (
+            <Text color={theme.status.warning}>
+              Press Ctrl+D again to exit.
+            </Text>
+          ) : uiState.showEscapePrompt ? (
+            <Text color={theme.text.secondary}>Press Esc again to clear.</Text>
+          ) : uiState.queueErrorMessage ? (
+            <Text color={theme.status.error}>{uiState.queueErrorMessage}</Text>
+          ) : (
+            !settings.merged.ui?.hideContextSummary && (
+              <ContextSummaryDisplay
+                ideContext={uiState.ideContextState}
+                geminiMdFileCount={uiState.geminiMdFileCount}
+                contextFileNames={contextFileNames}
+                mcpServers={config.getMcpServers()}
+                blockedMcpServers={config.getBlockedMcpServers()}
+                showToolDescriptions={uiState.showToolDescriptions}
+              />
+            )
+          )}
+        </Box>
+        <Box paddingTop={isNarrow ? 1 : 0}>
+          {showAutoAcceptIndicator !== ApprovalMode.DEFAULT &&
+            !uiState.shellModeActive && (
+              <AutoAcceptIndicator approvalMode={showAutoAcceptIndicator} />
+            )}
+          {uiState.shellModeActive && <ShellModeIndicator />}
+        </Box>
+      </Box>
       <ComposerStatusDisplay />
 
       {uiState.showErrorDetails && (
@@ -74,7 +117,7 @@ export const Composer = () => {
               maxHeight={
                 uiState.constrainHeight ? debugConsoleMaxHeight : undefined
               }
-              width={containerWidth}
+              width={uiState.mainAreaWidth}
             />
             <ShowMoreLines constrainHeight={uiState.constrainHeight} />
           </Box>
@@ -90,7 +133,7 @@ export const Composer = () => {
           userMessages={uiState.userMessages}
           onClearScreen={uiActions.handleClearScreen}
           config={config}
-          slashCommands={uiState.slashCommands}
+          slashCommands={uiState.slashCommands || []}
           commandContext={uiState.commandContext}
           shellModeActive={uiState.shellModeActive}
           setShellModeActive={uiActions.setShellModeActive}
@@ -104,6 +147,8 @@ export const Composer = () => {
               ? "  Press 'i' for INSERT mode and 'Esc' for NORMAL mode."
               : '  Type your message or @path/to/file'
           }
+          setQueueErrorMessage={uiActions.setQueueErrorMessage}
+          streamingState={uiState.streamingState}
         />
       )}
 
